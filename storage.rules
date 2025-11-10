@@ -1,0 +1,30 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Public wallpapers (read-only for all)
+    match /public/wallpapers/{wallpaperId}/{fileName} {
+      allow read: if true;
+      allow write: if false; // Only server/admin can write
+    }
+
+    // Protected user generations
+    match /protected/users/{uid}/generations/{genId}/{fileName} {
+      allow read: if isOwner(uid);
+      allow write: if false; // Only server can write
+    }
+
+    // Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
